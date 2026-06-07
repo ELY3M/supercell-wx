@@ -39,7 +39,7 @@
      <x>0</x>
      <y>0</y>
      <width>1024</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -53,19 +53,7 @@
      <addaction name="actionOpenNexrad"/>
      <addaction name="actionOpenTextEvent"/>
     </widget>
-    <widget class="QMenu" name="menuScreenCapture">
-     <property name="title">
-      <string>Screen &amp;Capture</string>
-     </property>
-     <addaction name="actionScreenCaptureCopy"/>
-     <addaction name="actionScreenCaptureSaveImage"/>
-    </widget>
     <addaction name="menu_Open"/>
-    <addaction name="separator"/>
-    <addaction name="menuScreenCapture"/>
-    <addaction name="separator"/>
-    <addaction name="actionImport"/>
-    <addaction name="actionExport"/>
     <addaction name="separator"/>
     <addaction name="actionSettings"/>
     <addaction name="separator"/>
@@ -100,26 +88,6 @@
     <addaction name="actionGpsInfo"/>
     <addaction name="separator"/>
     <addaction name="menuMapLayers"/>
-    <addaction name="separator"/>
-    <addaction name="actionFullScreen"/>
-   </widget>
-   <widget class="QMenu" name="menuPanes">
-    <property name="title">
-     <string>&amp;Panes</string>
-    </property>
-    <addaction name="actionPanesLinkColumnWidth"/>
-    <addaction name="actionPanesLinkColumnHeight"/>
-    <addaction name="actionPanesMatchMapStyle"/>
-    <addaction name="separator"/>
-    <addaction name="actionPanes1x1"/>
-    <addaction name="actionPanes1x2"/>
-    <addaction name="actionPanes2x1"/>
-    <addaction name="actionPanes2x2"/>
-    <addaction name="actionPanes3x3"/>
-    <addaction name="separator"/>
-    <addaction name="actionPanesCustom"/>
-    <addaction name="separator"/>
-    <addaction name="actionRecreateMapLayout"/>
    </widget>
    <widget class="QMenu" name="menuDebug">
     <property name="title">
@@ -142,7 +110,6 @@
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
-   <addaction name="menuPanes"/>
    <addaction name="menuTools"/>
    <addaction name="menuDebug"/>
    <addaction name="menuHelp"/>
@@ -188,8 +155,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>191</width>
-          <height>689</height>
+          <width>190</width>
+          <height>680</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -207,25 +174,39 @@
          </property>
          <item>
           <widget class="QFrame" name="radarInfoFrame">
+           <property name="frameShape">
+            <enum>QFrame::Shape::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Shadow::Raised</enum>
+           </property>
            <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0">
-            <item row="3" column="2" colspan="3">
-             <widget class="QLabel" name="vcpValueLabel">
+            <item row="0" column="2">
+             <widget class="QLabel" name="radarSiteValueLabel">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
-               <string notr="true">35</string>
+               <string notr="true">KLSX</string>
               </property>
              </widget>
             </item>
-            <item row="4" column="2" colspan="3">
-             <widget class="QLabel" name="vcpDescriptionLabel">
-              <property name="text">
-               <string>Clear Air Mode</string>
+            <item row="3" column="0" colspan="2">
+             <widget class="QLabel" name="vcpLabel">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
               </property>
-             </widget>
-            </item>
-            <item row="1" column="2" colspan="3">
-             <widget class="QLabel" name="radarLocationLabel">
+              <property name="toolTip">
+               <string>Volume Coverage Pattern</string>
+              </property>
               <property name="text">
-               <string notr="true">St. Louis, MO</string>
+               <string>VCP</string>
               </property>
              </widget>
             </item>
@@ -255,7 +236,7 @@
                  <property name="maximumSize">
                   <size>
                    <width>16777215</width>
-                   <height>13</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="text">
@@ -272,7 +253,7 @@
                  <property name="maximumSize">
                   <size>
                    <width>16777215</width>
-                   <height>13</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="text">
@@ -290,35 +271,6 @@
               </layout>
              </widget>
             </item>
-            <item row="0" column="3">
-             <widget class="QToolButton" name="radarSiteSelectButton">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>13</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>...</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0" colspan="2">
-             <widget class="QLabel" name="vcpLabel">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="toolTip">
-               <string>Volume Coverage Pattern</string>
-              </property>
-              <property name="text">
-               <string>VCP</string>
-              </property>
-             </widget>
-            </item>
             <item row="0" column="0" colspan="2">
              <widget class="QLabel" name="radarSiteLabel">
               <property name="text">
@@ -326,16 +278,37 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="2">
-             <widget class="QLabel" name="radarSiteValueLabel">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
+            <item row="1" column="2" colspan="3">
+             <widget class="QLabel" name="radarLocationLabel">
+              <property name="text">
+               <string notr="true">St. Louis, MO</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2" colspan="3">
+             <widget class="QLabel" name="vcpValueLabel">
+              <property name="text">
+               <string notr="true">35</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="2" colspan="3">
+             <widget class="QLabel" name="vcpDescriptionLabel">
+              <property name="text">
+               <string>Clear Air Mode</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QToolButton" name="radarSiteSelectButton">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>30</height>
+               </size>
               </property>
               <property name="text">
-               <string notr="true">KLSX</string>
+               <string>...</string>
               </property>
              </widget>
             </item>
@@ -369,13 +342,6 @@
              <widget class="QCheckBox" name="trackLocationCheckBox">
               <property name="text">
                <string>Track Location</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="saveRadarProductsButton">
-              <property name="text">
-               <string>Set As Default Products</string>
               </property>
              </widget>
             </item>
@@ -546,111 +512,6 @@
    </property>
    <property name="text">
     <string>Radar &amp;Wireframe</string>
-   </property>
-  </action>
-  <action name="actionScreenCaptureCopy">
-   <property name="text">
-    <string>&amp;Copy</string>
-   </property>
-  </action>
-  <action name="actionScreenCaptureSaveImage">
-   <property name="text">
-    <string>&amp;Save Image</string>
-   </property>
-  </action>
-  <action name="actionImport">
-   <property name="text">
-    <string>&amp;Import</string>
-   </property>
-  </action>
-  <action name="actionExport">
-   <property name="text">
-    <string>&amp;Export</string>
-   </property>
-  </action>
-  <action name="actionFullScreen">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Full Screen</string>
-   </property>
-  </action>
-  <action name="actionRecreateMapLayout">
-   <property name="text">
-    <string>Reset &amp;Layout</string>
-   </property>
-  </action>
-  <action name="actionPanesLinkColumnWidth">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Link &amp;column width</string>
-   </property>
-  </action>
-  <action name="actionPanesLinkColumnHeight">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Link column &amp;height</string>
-   </property>
-  </action>
-  <action name="actionPanesMatchMapStyle">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Match &amp;map style</string>
-   </property>
-   <property name="toolTip">
-    <string>When enabled, new panes use the first pane map style. When off, each pane slot keeps the map style stored in settings.</string>
-   </property>
-  </action>
-  <action name="actionPanes1x1">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>1x1</string>
-   </property>
-  </action>
-  <action name="actionPanes1x2">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>1x2</string>
-   </property>
-  </action>
-  <action name="actionPanes2x1">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>2x1</string>
-   </property>
-  </action>
-  <action name="actionPanes2x2">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>2x2</string>
-   </property>
-  </action>
-  <action name="actionPanes3x3">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>3x3</string>
-   </property>
-  </action>
-  <action name="actionPanesCustom">
-   <property name="text">
-    <string>&amp;Custom...</string>
    </property>
   </action>
  </widget>
