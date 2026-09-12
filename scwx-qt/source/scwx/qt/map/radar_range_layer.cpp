@@ -43,7 +43,7 @@ void RadarRangeLayer::Add(const std::shared_ptr<QMapLibre::Map>& map,
    map->addLayer(
       layerId, {{"type", "line"}, {"source", "rangeCircleSource"}}, before);
    map->setPaintProperty(layerId, "line-color", "rgba(128, 128, 128, 128)");
-   map->setPaintProperty(layerId, "line-opacity", opacity);
+   map->setPaintProperty(layerId, "line-opacity", static_cast<double>(opacity));
 }
 
 void RadarRangeLayer::SetOpacity(const std::shared_ptr<QMapLibre::Map>& map,
@@ -54,7 +54,8 @@ void RadarRangeLayer::SetOpacity(const std::shared_ptr<QMapLibre::Map>& map,
 
    if (map != nullptr && map->layerExists(layerId))
    {
-      map->setPaintProperty(layerId, "line-opacity", opacity);
+      map->setPaintProperty(
+         layerId, "line-opacity", static_cast<double>(opacity));
    }
 }
 
