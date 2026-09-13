@@ -13,16 +13,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 OPTION(SCWX_DISABLE_CONSOLE "Disables the Windows console in release mode" ON)
 
-find_package(Boost)
-find_package(Fontconfig)
-find_package(geographiclib)
-find_package(geos)
-find_package(glm)
-find_package(JPEG)
+find_package(Boost
+             COMPONENTS atomic
+                        json
+                        program_options
+                        timer
+             REQUIRED)
+find_package(Fontconfig REQUIRED)
+find_package(GeographicLib REQUIRED)
+find_package(geos REQUIRED)
+find_package(glm REQUIRED)
+find_package(JPEG REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(PNG REQUIRED)
 find_package(Python COMPONENTS Interpreter)
-find_package(SQLite3)
-find_package(TIFF)
+find_package(SQLite3 REQUIRED)
+find_package(TIFF REQUIRED)
 
 find_package(QT NAMES Qt6
              COMPONENTS Gui
@@ -118,6 +124,9 @@ set(HDR_MANAGER source/scwx/qt/manager/alert_manager.hpp
                 source/scwx/qt/manager/media_manager.hpp
                 source/scwx/qt/manager/placefile_manager.hpp
                 source/scwx/qt/manager/position_manager.hpp
+                source/scwx/qt/manager/product_datastore.hpp
+                source/scwx/qt/manager/provider_manager.hpp
+                source/scwx/qt/manager/radar_coordinate_table.hpp
                 source/scwx/qt/manager/radar_product_manager.hpp
                 source/scwx/qt/manager/radar_product_manager_notifier.hpp
                 source/scwx/qt/manager/radar_site_status_manager.hpp
@@ -137,6 +146,9 @@ set(SRC_MANAGER source/scwx/qt/manager/alert_manager.cpp
                 source/scwx/qt/manager/media_manager.cpp
                 source/scwx/qt/manager/placefile_manager.cpp
                 source/scwx/qt/manager/position_manager.cpp
+                source/scwx/qt/manager/product_datastore.cpp
+                source/scwx/qt/manager/provider_manager.cpp
+                source/scwx/qt/manager/radar_coordinate_table.cpp
                 source/scwx/qt/manager/radar_product_manager.cpp
                 source/scwx/qt/manager/radar_product_manager_notifier.cpp
                 source/scwx/qt/manager/radar_site_status_manager.cpp
@@ -315,6 +327,7 @@ set(HDR_UI source/scwx/qt/ui/about_dialog.hpp
            source/scwx/qt/ui/imgui_debug_dialog.hpp
            source/scwx/qt/ui/imgui_debug_widget.hpp
            source/scwx/qt/ui/layer_dialog.hpp
+           source/scwx/qt/ui/layer_opacity_delegate.hpp
            source/scwx/qt/ui/left_elided_item_delegate.hpp
            source/scwx/qt/ui/level2_products_widget.hpp
            source/scwx/qt/ui/level2_settings_widget.hpp
@@ -354,6 +367,7 @@ set(SRC_UI source/scwx/qt/ui/about_dialog.cpp
            source/scwx/qt/ui/imgui_debug_dialog.cpp
            source/scwx/qt/ui/imgui_debug_widget.cpp
            source/scwx/qt/ui/layer_dialog.cpp
+           source/scwx/qt/ui/layer_opacity_delegate.cpp
            source/scwx/qt/ui/left_elided_item_delegate.cpp
            source/scwx/qt/ui/level2_products_widget.cpp
            source/scwx/qt/ui/level2_settings_widget.cpp
@@ -494,6 +508,9 @@ set(SHADER_FILES gl/annotation_geo.vert
 
 set(CMAKE_FILES scwx-qt.cmake)
 
+set(GIS_FILES res/config/radars_iastate.gis
+              res/config/radars_weatherpulse.gis)
+
 set(JSON_FILES res/config/radar_sites.json)
 
 set(TS_FILES ts/scwx_en_US.ts)
@@ -510,6 +527,8 @@ set(COUNTIES_SQLITE_DB ${scwx-qt_BINARY_DIR}/res/db/counties.db)
 
 set(RESOURCE_INPUT  ${scwx-qt_SOURCE_DIR}/res/scwx-qt.rc.in)
 set(RESOURCE_OUTPUT ${scwx-qt_BINARY_DIR}/res/scwx-qt.rc)
+set(METAINFO_INPUT  ${scwx-qt_SOURCE_DIR}/res/linux/net.supercellwx.app.metainfo.xml.in)
+set(METAINFO_OUTPUT ${scwx-qt_BINARY_DIR}/res/linux/net.supercellwx.app.metainfo.xml)
 set(VERSIONS_INPUT  ${scwx-qt_SOURCE_DIR}/source/scwx/qt/main/versions.hpp.in)
 set(VERSIONS_CACHE  ${scwx-qt_BINARY_DIR}/versions_cache.json)
 set(VERSIONS_HEADER ${scwx-qt_BINARY_DIR}/scwx/qt/main/versions.hpp)
@@ -552,6 +571,7 @@ set(PROJECT_SOURCES ${HDR_MAIN}
                     ${HDR_VIEW}
                     ${SRC_VIEW}
                     ${SHADER_FILES}
+                    ${GIS_FILES}
                     ${JSON_FILES}
                     ${TS_FILES}
                     ${CMAKE_FILES})
@@ -598,6 +618,7 @@ source_group("Header Files\\view"         FILES ${HDR_VIEW})
 source_group("Source Files\\view"         FILES ${SRC_VIEW})
 source_group("OpenGL Shaders"             FILES ${SHADER_FILES})
 source_group("Resources"                  FILES ${RESOURCE_FILES})
+source_group("Resources\\gis"             FILES ${GIS_FILES})
 source_group("Resources\\json"            FILES ${JSON_FILES})
 source_group("I18N Files"                 FILES ${TS_FILES})
 
@@ -630,8 +651,30 @@ else()
     set(SCWX_BUILD_NUM 0)
 endif()
 
+# Extra arguments for generate_versions.py
+# These can be set by the user to override the default values
+set(SCWX_COMMIT_STRING "" CACHE STRING
+    "Optional git commit hash override for version info (first 10 characters are used)")
+set(SCWX_RELEASE_DATE "" CACHE STRING
+    "Optional release date override for version info (YYYY-MM-DD)")
+
+set(SCWX_GENERATE_VERSIONS_EXTRA_ARGS)
+if (SCWX_COMMIT_STRING)
+    string(SUBSTRING "${SCWX_COMMIT_STRING}" 0 10 _scwxCommitString)
+    list(APPEND SCWX_GENERATE_VERSIONS_EXTRA_ARGS
+         --commit-string "${_scwxCommitString}")
+    unset(_scwxCommitString)
+endif()
+if (SCWX_RELEASE_DATE)
+    list(APPEND SCWX_GENERATE_VERSIONS_EXTRA_ARGS
+         --release-date "${SCWX_RELEASE_DATE}")
+endif()
+
 if (WIN32)
-    add_custom_command(OUTPUT  ${VERSIONS_HEADER} ${RESOURCE_OUTPUT} ${VERSIONS_HEADER}-ALWAYS_RUN
+    add_custom_command(OUTPUT  ${VERSIONS_HEADER}
+                               ${RESOURCE_OUTPUT}
+                               ${METAINFO_OUTPUT}
+                               ${VERSIONS_HEADER}-ALWAYS_RUN
                        COMMAND ${Python_EXECUTABLE}
                                ${scwx-qt_SOURCE_DIR}/tools/generate_versions.py
                                -g ${SCWX_DIR}
@@ -641,9 +684,14 @@ if (WIN32)
                                -o ${VERSIONS_HEADER}
                                -b ${SCWX_BUILD_NUM}
                                --input-resource ${RESOURCE_INPUT}
-                               --output-resource ${RESOURCE_OUTPUT})
+                               --output-resource ${RESOURCE_OUTPUT}
+                               --input-metainfo ${METAINFO_INPUT}
+                               --output-metainfo ${METAINFO_OUTPUT}
+                               ${SCWX_GENERATE_VERSIONS_EXTRA_ARGS})
 else()
-    add_custom_command(OUTPUT  ${VERSIONS_HEADER} ${VERSIONS_HEADER}-ALWAYS_RUN
+    add_custom_command(OUTPUT  ${VERSIONS_HEADER}
+                               ${METAINFO_OUTPUT}
+                               ${VERSIONS_HEADER}-ALWAYS_RUN
                        COMMAND ${Python_EXECUTABLE}
                                ${scwx-qt_SOURCE_DIR}/tools/generate_versions.py
                                -g ${SCWX_DIR}
@@ -651,7 +699,10 @@ else()
                                -c ${VERSIONS_CACHE}
                                -i ${VERSIONS_INPUT}
                                -o ${VERSIONS_HEADER}
-                               -b ${SCWX_BUILD_NUM})
+                               -b ${SCWX_BUILD_NUM}
+                               --input-metainfo ${METAINFO_INPUT}
+                               --output-metainfo ${METAINFO_OUTPUT}
+                               ${SCWX_GENERATE_VERSIONS_EXTRA_ARGS})
 endif()
 
 add_custom_target(scwx-qt_generate_versions ALL
@@ -714,7 +765,7 @@ elseif (APPLE)
                           MACOSX_BUNDLE_INFO_PLIST           "${scwx-qt_SOURCE_DIR}/res/scwx-qt.plist.in"
                           MACOSX_BUNDLE_GUI_IDENTIFIER       "net.supercellwx.app"
                           MACOSX_BUNDLE_BUNDLE_NAME          "Supercell Wx"
-                          MACOSX_BUNDLE_BUNDLE_VERSION       "${SCWX_VERSION}"
+                          MACOSX_BUNDLE_BUNDLE_VERSION       "${SCWX_BUILD_NUM}"
                           MACOSX_BUNDLE_SHORT_VERSION_STRING "${SCWX_VERSION}"
                           MACOSX_BUNDLE_COPYRIGHT            "Copyright ${CURRENT_YEAR} Dan Paulat"
                           MACOSX_BUNDLE_ICON_FILE            "scwx.icns"
@@ -758,12 +809,22 @@ target_compile_options(supercell-wx PRIVATE
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
 )
 
-# Temporary workaround for Boost and GCC 16+ where -Warray-bounds causes false positives
+# GCC 14+ produces false positives for -Wmaybe-uninitialized
+target_compile_options(scwx-qt PRIVATE
+    $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14>>:-Wno-maybe-uninitialized>
+)
+target_compile_options(supercell-wx PRIVATE
+    $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14>>:-Wno-maybe-uninitialized>
+)
+
+# Temporary workaround for Boost and GCC 16+ where -Warray-bounds and -Wstringop-overflow cause false positives
 target_compile_options(scwx-qt PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,16>>:-Wno-array-bounds>
+    $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,16>>:-Wno-stringop-overflow>
 )
 target_compile_options(supercell-wx PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,16>>:-Wno-array-bounds>
+    $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,16>>:-Wno-stringop-overflow>
 )
 
 if (MSVC)
@@ -841,6 +902,7 @@ target_link_libraries(scwx-qt PUBLIC Qt${QT_VERSION_MAJOR}::Widgets
                                      glm::glm
                                      imgui
                                      JPEG::JPEG
+                                     PNG::PNG
                                      qt6ct-common
                                      qt6ct-widgets
                                      SQLite::SQLite3
@@ -853,11 +915,18 @@ target_link_libraries(supercell-wx PRIVATE scwx-qt
                                            wxdata)
 
 if (WIN32)
-    # Deploy Qt to target directory
+    scwx_windeployqt_qtpaths_options(_qtpaths_opts)
+
+    set(SCWX_WINDEPLOYQT_OPTIONS --no-translations
+                                 --no-compiler-runtime # (CRT comes from the NSIS bootstrapper / system redist)
+                                 ${_qtpaths_opts})
+
+    # Deploy Qt to target directory 
     add_custom_command(TARGET supercell-wx
                        POST_BUILD
                        COMMAND "${WINDEPLOYQT_EXECUTABLE}"
-                           --no-translations $<TARGET_FILE:supercell-wx>
+                           ${SCWX_WINDEPLOYQT_OPTIONS}
+                           $<TARGET_FILE:supercell-wx>
                        COMMENT "Running windeployqt for supercell-wx...")
 endif()
 
@@ -867,12 +936,23 @@ if (LINUX)
     set_target_properties(supercell-wx PROPERTIES INSTALL_RPATH "\$ORIGIN/../lib")
 endif()
 
-install(TARGETS supercell-wx
-                MLNQtCore # QMapLibre::Core
+# install(TARGETS RUNTIME_DEPENDENCIES) is rejected when CMAKE_CROSSCOMPILING.
+# Qt's Windows ARM64 toolchain sets that on x64 hosts; copy imported runtime
+# DLLs instead. windeployqt still deploys Qt.
+if (NOT CMAKE_CROSSCOMPILING)
+    set(_scwx_runtime_dependencies
         RUNTIME_DEPENDENCIES
           PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-" "qt6"
           POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
                                "^(/usr)?/lib/.*\\.so(\\..*)?"
+    )
+else()
+    set(_scwx_runtime_dependencies)
+endif()
+
+install(TARGETS supercell-wx
+                MLNQtCore # QMapLibre::Core
+        ${_scwx_runtime_dependencies}
         RUNTIME
           COMPONENT supercell-wx
         BUNDLE
@@ -887,17 +967,52 @@ install(TARGETS supercell-wx
           COMPONENT supercell-wx
           OPTIONAL)
 
+if (WIN32 AND CMAKE_CROSSCOMPILING)
+    # TARGET_RUNTIME_DLLS only lists direct link dependencies. Transitive
+    # runtime DLLs (e.g. iconv-2.dll via fontconfig) are staged next to the
+    # executable by conanfile.py generate() but are omitted from install
+    # without RUNTIME_DEPENDENCIES (unsupported when cross-compiling).
+    install(CODE "
+        set(_scwx_runtime_dlls
+            \"$<TARGET_RUNTIME_DLLS:supercell-wx>\"
+            \"$<TARGET_RUNTIME_DLLS:MLNQtCore>\")
+        file(GLOB _scwx_staged_dlls \"$<TARGET_FILE_DIR:supercell-wx>/*.dll\")
+        list(APPEND _scwx_runtime_dlls \${_scwx_staged_dlls})
+        list(REMOVE_DUPLICATES _scwx_runtime_dlls)
+        foreach(_scwx_dll IN LISTS _scwx_runtime_dlls)
+            if(_scwx_dll STREQUAL \"\")
+                continue()
+            endif()
+            get_filename_component(_scwx_dll_name \"\${_scwx_dll}\" NAME)
+            if(_scwx_dll_name MATCHES \"^[Qq]t6\" OR
+               _scwx_dll_name MATCHES \"^(api-ms-|ext-ms-)\")
+                continue()
+            endif()
+            file(INSTALL DESTINATION \"\${CMAKE_INSTALL_PREFIX}/bin\"
+                 TYPE SHARED_LIBRARY
+                 FILES \"\${_scwx_dll}\")
+        endforeach()
+        " COMPONENT supercell-wx)
+endif()
+
+scwx_windeployqt_qtpaths_options(SCWX_DEPLOY_TOOL_OPTIONS)
+
 # NO_TRANSLATIONS is needed for Qt 6.5.0 (will be fixed in 6.5.1)
 # https://bugreports.qt.io/browse/QTBUG-112204
+# NO_COMPILER_RUNTIME: VC++ redistributable is installed by the NSIS bootstrapper
 qt_generate_deploy_app_script(TARGET MLNQtCore # QMapLibre::Core
                               OUTPUT_SCRIPT deploy_script_qmaplibre_core
                               NO_TRANSLATIONS
-                              NO_UNSUPPORTED_PLATFORM_ERROR)
+                              NO_COMPILER_RUNTIME
+                              NO_UNSUPPORTED_PLATFORM_ERROR
+                              DEPLOY_TOOL_OPTIONS ${SCWX_DEPLOY_TOOL_OPTIONS})
 
 qt_generate_deploy_app_script(TARGET supercell-wx
                               OUTPUT_SCRIPT deploy_script_scwx
                               NO_TRANSLATIONS
-                              NO_UNSUPPORTED_PLATFORM_ERROR)
+                              NO_COMPILER_RUNTIME
+                              NO_UNSUPPORTED_PLATFORM_ERROR
+                              DEPLOY_TOOL_OPTIONS ${SCWX_DEPLOY_TOOL_OPTIONS})
 
 install(SCRIPT ${deploy_script_qmaplibre_core}
         COMPONENT supercell-wx)
@@ -963,7 +1078,13 @@ set(SCWX_WINDOWS_PACKAGE_INSTALL_ROOT "" CACHE PATH
     "Existing installed Supercell Wx tree to package for Windows")
 
 if (MSVC)
-    set(CPACK_PACKAGE_FILE_NAME           "supercell-wx-v${SCWX_VERSION}-windows-x64")
+    if (CMAKE_CXX_COMPILER_ARCHITECTURE_ID STREQUAL "ARM64" OR
+        CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$")
+        set(CPACK_PACKAGE_FILE_NAME "supercell-wx-v${SCWX_VERSION}-windows-arm64")
+    else()
+        set(CPACK_PACKAGE_FILE_NAME "supercell-wx-v${SCWX_VERSION}-windows-x64")
+    endif()
+
     set(CPACK_PACKAGE_INSTALL_DIRECTORY   "Supercell Wx")
     set(CPACK_PACKAGE_ICON                "${CMAKE_CURRENT_SOURCE_DIR}/res/icons/scwx-256.ico")
     set(CPACK_GENERATOR                   WIX)
